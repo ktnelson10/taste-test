@@ -1,39 +1,61 @@
 # Taste Test 🥞
 
-A simple, mobile-friendly web app for running family/group **blind taste tests**. Participants
-drag-and-drop to guess which sample is which and rank their favorites; the host runs the whole
-thing from the website and reveals results when everyone's done.
+A simple website for running **blind taste tests** with your family or friends — the kind where you
+line up a few versions of something (pancakes, chips, olive oil, granola, sodas…), everyone tastes
+them without knowing which is which, and then you find out who guessed right and what the group
+liked best.
 
-Designed to be usable by anyone from kids to grandparents — big touch targets, drag-and-drop,
-one thing per screen.
+It's built to be easy enough for a little kid or a grandparent to use on a phone or tablet: big
+buttons, drag-and-drop, one screen at a time.
 
-## How it works
-- **Frontend** (`index.html`): a single static page hosted free on Cloudflare Pages. Participant
-  tasting flow + a password-protected host area (create session, live dashboard, results).
-- **Backend** (`Code.gs`): a Google Apps Script bound to a Google Sheet, deployed once as a web
-  app. Stores config + responses and serves results. No server to run.
-- **Storage** (Google Sheet): `Setup`, `Submissions`, `History`, and `Archive` tabs — all managed
-  by the app. The host never edits the Sheet by hand.
+## What it does
 
-## Features
-- Host creates each session on the website (event name, items, sample letters) — password gated.
-- Drag brands onto lettered samples (A, B, C…) and drag to rank favorite → least.
-- Results, revealed on the host's cue: **group favorites**, a **matching leaderboard** with
-  per-person drill-down, and **per-item detail** (answer key folded into the labels).
-- **Nothing is ever deleted** — finishing a session archives it (with the date) to History + Archive.
-- Live re-scoring: fixing a mistyped answer key corrects results without losing responses.
+At a taste test, each person does two things:
 
-## Setup
-See **[SETUP_GUIDE.md](SETUP_GUIDE.md)** for the full one-time setup (Sheet + Apps Script deploy +
-Cloudflare Pages) and how to run an event.
+1. **Guess which is which.** Each sample is labeled with a letter (A, B, C…). You drag the brand
+   names onto the letters you think they belong to.
+2. **Rank your favorites.** You drag the samples into order, favorite on top, least favorite on the
+   bottom.
 
-## Files
-| File | What it is |
-|------|------------|
-| `index.html` | The web app (host on Cloudflare Pages) |
-| `Code.gs` | Google Apps Script backend (paste into the Sheet's Apps Script) |
-| `SETUP_GUIDE.md` | Step-by-step setup + usage |
+When everyone's done, the host reveals the results and the app shows:
 
-## Tech
-Vanilla HTML/CSS/JS, [SortableJS](https://sortablejs.github.io/Sortable/) for drag-and-drop,
-Google Apps Script, Cloudflare Pages. No build step, no dependencies to install.
+- ⭐ **Group favorites** — what the whole group liked best, combined.
+- 🏆 **Matching leaderboard** — who correctly identified the most samples (tap a name to see exactly
+  what they got right and wrong).
+- 📊 **Per-item detail** — how each item did, with the answer key built right in.
+
+No more paper forms, and no adding up scores by hand afterward.
+
+## How you use it (as the host)
+
+1. Open the website and tap **Host controls**, then enter your password.
+2. **Create a taste test:** type the event name and each item, and pick the letter you'll write on
+   each plate/cup.
+3. Label your samples, then share the link (or a QR code) with everyone. People can use their own
+   phones, or you can pass around a shared tablet — after each person submits, it resets for the
+   next taster.
+4. Watch submissions come in live. When everyone's finished, tap **End & Reveal results**.
+5. Ready for the next round? Tap **Save & start new session** — the finished one is saved
+   automatically (with the date), and you get a fresh setup screen.
+
+You can also tap **Take the taste test myself** to join in, then hop back to hosting — no need to
+reload anything.
+
+## How you use it (as a taster)
+
+Open the link, type your name, drag the brands onto the letters, drag the samples into your
+favorite order, and hit submit. That's it. Results show up once the host ends the taste test.
+
+## Good to know
+
+- **Nothing you record is ever deleted.** Every finished taste test is saved and kept for later.
+- It runs on free tools (a Google Sheet behind the scenes, plus free web hosting), so there's
+  nothing to pay for.
+- Works on phones, tablets, and computers.
+
+## The nerdy bits
+
+If you want to set it up yourself or understand how it's built, see **[SETUP_GUIDE.md](SETUP_GUIDE.md)**
+for step-by-step setup, and **[CLAUDE.md](CLAUDE.md)** for the technical architecture. It's a single
+static web page (hosted on Cloudflare Pages) talking to a Google Apps Script backend attached to a
+Google Sheet — no servers to run, no build step.

@@ -88,7 +88,7 @@
 
 <script>
 /* ---------------- State ---------------- */
-let CONFIG=null, HOST_KEY='', pollTimer=null;
+let CONFIG=null, HOST_KEY='', pollTimer=null, view='participant';
 const DEVICE=getDevice();
 const params=new URLSearchParams(location.search);
 let hostMode=params.has('host');
@@ -103,7 +103,25 @@ function letters(){ return Array.from({length:CONFIG.sampleCount},(_,i)=>String.
 function showErr(id,msg){ const c=document.getElementById(id); if(c) c.innerHTML=`<div class="err">${esc(msg)}</div>`; }
 async function apiGet(action, extra){ const u=new URL(API_URL); u.searchParams.set('action',action); if(extra) Object.keys(extra).forEach(k=>u.searchParams.set(k,extra[k])); const r=await fetch(u.toString()); return r.json(); }
 async function apiPost(payload){ const r=await fetch(API_URL,{method:'POST',body:JSON.stringify(payload)}); return r.json(); }
-function hostFooterLink(){ const a=document.getElementById('hostLink'); if(a) a.textContent = HOST_KEY? 'Host: '+ (CONFIG&&CONFIG.eventName? '' : '') + 'controls' : 'Host controls'; }
+/* ---- View navigation (host <-> taster, no refresh needed) ---- */
+function setView(v){ view=v; updateFooter(); }
+function updateFooter(){
+  const a=document.getElementById('hostLink'); if(!a) return;
+  if(view==='host'){ a.textContent='🍽️ Take the taste test'; a.onclick=(e)=>{ e.preventDefault(); goTaster(); }; }
+  else { a.textContent = HOST_KEY? '⚙️ Back to host controls' : '⚙️ Host controls'; a.onclick=(e)=>{ e.preventDefault(); goHost(); }; }
+}
+async function goHost(){
+  if(pollTimer) clearInterval(pollTimer);
+  setView('host');
+  try{ CONFIG=await apiGet('config'); }catch(e){}
+  if(HOST_KEY) routeHost_currentStatus(); else renderHost();
+}
+async function goTaster(){
+  if(pollTimer) clearInterval(pollTimer);
+  setView('participant');
+  try{ CONFIG=await apiGet('config'); }catch(e){}
+  routeParticipant();
+}
 
 /* ---------------- Boot ---------------- */
 async function boot(){
@@ -115,6 +133,8 @@ async function boot(){
   routeParticipant();
 }
 function routeParticipant(){
+  if(pollTimer) clearInterval(pollTimer);
+  setView('participant');
   if(CONFIG.status==='open') renderWelcome();
   else if(CONFIG.status==='closed') renderClosedForParticipant();
   else renderNoSession();
@@ -231,6 +251,7 @@ function renderClosedForParticipant(){
    ===================================================== */
 function renderHost(){
   if(pollTimer) clearInterval(pollTimer);
+  setView('host');
   app.innerHTML='';
   app.appendChild(el(`
     <div class="card">
@@ -251,6 +272,7 @@ function renderHost(){
 
 async function routeHost(status){
   if(pollTimer) clearInterval(pollTimer);
+  setView('host');
   if(status==='open') return renderHostOpen();
   if(status==='closed') return renderHostClosed();
   return renderCreate();
@@ -353,10 +375,11 @@ async function renderHostOpen(){
       <div class="pool" style="margin-top:6px">${names.map(n=>`<span class="chip" style="cursor:default">${esc(n)}</span>`).join('')||'<span class="muted">No submissions yet.</span>'}</div>
       <div class="divider"></div>
       <div class="btn-row"><button class="btn-primary" id="end">End &amp; Reveal results</button></div>
-      <div class="btn-row"><button class="btn-ghost" id="refresh">↻ Refresh</button></div>
+      <div class="btn-row"><button class="btn-ghost" id="taste">🍽️ Take the taste test myself</button><button class="btn-ghost" id="refresh">↻ Refresh</button></div>
       <div id="herr"></div>
     </div>
     ${changePwLink()}`));
+  document.getElementById('taste').onclick=goTaster;
   document.getElementById('refresh').onclick=renderHostOpen;
   document.getElementById('end').onclick=async ()=>{ if(!confirm('End the taste test and reveal results to everyone?')) return; await apiPost({action:'close',key:HOST_KEY}); renderHostClosed(); };
   pollTimer=setInterval(async ()=>{ const s=await apiGet('status',{key:HOST_KEY}); if(s.status!=='open'){ clearInterval(pollTimer); return; } const b=document.querySelector('.big'); if(b) b.innerHTML=`${s.submitted} <span class="muted" style="font-size:16px">of ${s.expected||'?'} submitted</span>`; },6000);
@@ -441,7 +464,7 @@ function personDetail(p, correct){
 }
 
 /* ---------------- misc ---------------- */
-document.getElementById('hostLink').onclick=(e)=>{ e.preventDefault(); hostMode=true; if(CONFIG) renderHost(); else boot(); };
+updateFooter();
 boot();
 </script>
 </body>

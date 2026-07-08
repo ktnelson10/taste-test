@@ -1,0 +1,11 @@
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+
+# Local notes / secrets (keep the deployed API URL out if you fork it publicly)
+*.local
+.env

@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Taste Test</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Sortable/1.15.2/Sortable.min.js"></script>
+<style>
+  :root{
+    --bg:#fff7ed; --card:#ffffff; --ink:#3a2a1a; --muted:#8a7a6a;
+    --accent:#f97316; --accent-dark:#ea580c; --good:#16a34a; --bad:#dc2626; --line:#f0e2d2;
+    --chip:#fff1e0; --slot:#fbeede; --shadow:0 6px 20px rgba(120,70,20,.10); --rh:66px;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;background:var(--bg);color:var(--ink);line-height:1.4;padding:16px;max-width:640px;margin:0 auto;min-height:100vh}
+  h1{font-size:26px;margin:6px 0 2px} h2{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--muted);font-size:15px;margin:0 0 16px}
+  .card{background:var(--card);border-radius:18px;box-shadow:var(--shadow);padding:20px;margin-bottom:16px}
+  .step-hint{font-size:16px;color:var(--muted);margin:0 0 14px}
+  button{font-family:inherit;font-size:19px;font-weight:700;border:none;border-radius:14px;padding:16px 20px;width:100%;cursor:pointer;transition:transform .05s ease, background .15s}
+  button:active{transform:scale(.98)}
+  .btn-primary{background:var(--accent);color:#fff}
+  .btn-primary:disabled{background:#e9c9ac;color:#fff;cursor:not-allowed}
+  .btn-ghost{background:#f3ece3;color:var(--ink)}
+  .btn-small{font-size:15px;padding:10px 12px;width:auto}
+  .btn-row{display:flex;gap:10px;margin-top:14px}
+  .btn-row button{flex:1}
+  input[type=text],input[type=password],input[type=number]{font-family:inherit;font-size:20px;width:100%;padding:14px;border:2px solid var(--line);border-radius:14px;background:#fff;color:var(--ink)}
+  input:focus{outline:none;border-color:var(--accent)}
+  label.fld{display:block;font-size:14px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.03em;margin:14px 0 6px}
+
+  .pool-label{font-size:14px;color:var(--muted);margin:14px 0 6px;font-weight:700;text-transform:uppercase;letter-spacing:.03em}
+  .divider{height:1px;background:var(--line);margin:16px 0}
+
+  .pool{display:flex;flex-wrap:wrap;gap:10px;min-height:56px;padding:6px;border-radius:12px}
+  .chip{background:var(--chip);border:2px solid #f6d3ac;border-radius:12px;padding:12px 14px;font-size:17px;font-weight:700;cursor:grab;touch-action:none;user-select:none}
+  .chip.sortable-ghost{opacity:.4}
+
+  .railhead,.railfoot{font-weight:800;letter-spacing:.03em;color:var(--accent-dark);font-size:15px;text-align:center;padding:6px 0}
+  .railfoot{color:var(--muted)}
+  .rankwrap{display:flex;gap:10px;align-items:flex-start}
+  .rail{flex:0 0 34px;display:flex;flex-direction:column}
+  .rail-cell{height:var(--rh);margin-bottom:10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;color:var(--muted)}
+  .rank-list{list-style:none;margin:0;padding:0;flex:1}
+  .rank-item{display:flex;align-items:center;gap:10px;height:var(--rh);background:#fff;border:2px solid var(--line);border-radius:14px;padding:0 10px;margin-bottom:10px;user-select:none}
+  .rank-item.sortable-ghost{opacity:.4}
+  .grip{color:#c9b49c;font-size:22px;cursor:grab;touch-action:none;padding:0 2px}
+  .badgeL{flex:0 0 42px;height:42px;border-radius:12px;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:800}
+  .bslot{flex:1;height:50px;border:2px dashed #e7c9a8;border-radius:12px;background:var(--slot);display:flex;align-items:center;justify-content:center;padding:3px;overflow:hidden}
+  .bslot .placeholder{color:#c8a67e;font-size:13px;font-weight:700}
+  .bslot .chip{width:100%;height:100%;margin:0;display:flex;align-items:center;justify-content:center;text-align:center;padding:2px 6px;font-size:15px;line-height:1.05;border-color:#f4b877;background:#ffe6cd;white-space:normal;word-break:break-word;cursor:grab}
+
+  /* Create-session item rows */
+  .item-row{display:flex;gap:8px;align-items:center;margin-bottom:8px}
+  .item-row .i-name{flex:1}
+  .item-row .i-letter{flex:0 0 60px;text-align:center;font-weight:800;text-transform:uppercase}
+  .item-row .rm{flex:0 0 42px;background:#fdeaea;color:#b91c1c;border-radius:12px;height:50px;font-size:20px;cursor:pointer;border:none}
+
+  table{width:100%;border-collapse:collapse;font-size:16px}
+  th,td{text-align:left;padding:10px 8px;border-bottom:1px solid var(--line)}
+  th{color:var(--muted);font-size:13px;text-transform:uppercase;letter-spacing:.03em}
+  td.n,th.n{text-align:right;font-variant-numeric:tabular-nums}
+  .clickable{cursor:pointer}.clickable:hover{background:#fff6ec}
+  .detail{background:#fdf3e6;border-radius:12px;padding:12px;margin:4px 0 12px}
+  .ok{color:var(--good);font-weight:800}.no{color:var(--bad);font-weight:800}
+  .medal{font-size:18px}
+  .pill{display:inline-block;background:var(--chip);border-radius:999px;padding:2px 10px;font-weight:700;font-size:14px}
+  .big{font-size:20px;font-weight:800}
+  .muted{color:var(--muted)}.center{text-align:center}
+  .thanks{font-size:60px;text-align:center;margin:10px 0}
+  .err{background:#fee2e2;color:#b91c1c;padding:12px;border-radius:12px;margin-top:12px;font-weight:600;white-space:pre-line}
+  .foot{text-align:center;margin-top:8px}
+  .foot a{color:var(--muted);font-size:13px;text-decoration:none;cursor:pointer}
+  .status-line{font-size:15px;color:var(--muted);margin-bottom:10px}
+  .tag{font-size:12px;color:var(--muted);font-weight:700;text-transform:uppercase;letter-spacing:.04em}
+</style>
+</head>
+<body>
+
+<script>
+  // 👇 Your Apps Script Web app URL 👇
+  const API_URL = "https://script.google.com/macros/s/AKfycbzGFb20XhnULl_9Rcr9v2wGQLSsVWlH_-HzRe6JpKiQf63BwyMGCNE_yikN564LJBRdJQ/exec";
+</script>
+
+<div id="app"></div>
+<div class="foot"><a id="hostLink">Host controls</a></div>
+
+<script>
+/* ---------------- State ---------------- */
+let CONFIG=null, HOST_KEY='', pollTimer=null;
+const DEVICE=getDevice();
+const params=new URLSearchParams(location.search);
+let hostMode=params.has('host');
+let taster={ name:'', matches:{}, ranking:[] };
+const app=document.getElementById('app');
+
+/* ---------------- Helpers ---------------- */
+function getDevice(){ let d=localStorage.getItem('tt_device'); if(!d){ d='dev-'+Math.random().toString(36).slice(2,7); localStorage.setItem('tt_device',d);} return d; }
+function el(html){ const t=document.createElement('template'); t.innerHTML=html.trim(); return t.content.firstChild; }
+function esc(s){ return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+function letters(){ return Array.from({length:CONFIG.sampleCount},(_,i)=>String.fromCharCode(65+i)); }
+function showErr(id,msg){ const c=document.getElementById(id); if(c) c.innerHTML=`<div class="err">${esc(msg)}</div>`; }
+async function apiGet(action, extra){ const u=new URL(API_URL); u.searchParams.set('action',action); if(extra) Object.keys(extra).forEach(k=>u.searchParams.set(k,extra[k])); const r=await fetch(u.toString()); return r.json(); }
+async function apiPost(payload){ const r=await fetch(API_URL,{method:'POST',body:JSON.stringify(payload)}); return r.json(); }
+function hostFooterLink(){ const a=document.getElementById('hostLink'); if(a) a.textContent = HOST_KEY? 'Host: '+ (CONFIG&&CONFIG.eventName? '' : '') + 'controls' : 'Host controls'; }
+
+/* ---------------- Boot ---------------- */
+async function boot(){
+  if(!API_URL || API_URL.indexOf('PASTE_')===0){ app.innerHTML='<div class="card"><h2>Not connected</h2><p class="sub">Set API_URL in index.html.</p></div>'; return; }
+  app.innerHTML='<div class="card center"><h2>Loading…</h2></div>';
+  try{ CONFIG=await apiGet('config'); }
+  catch(e){ app.innerHTML='<div class="card"><h2>Connection problem</h2><p class="sub">Could not reach the server. Check your internet and try again.</p></div>'; return; }
+  if(hostMode){ renderHost(); return; }
+  routeParticipant();
+}
+function routeParticipant(){
+  if(CONFIG.status==='open') renderWelcome();
+  else if(CONFIG.status==='closed') renderClosedForParticipant();
+  else renderNoSession();
+}
+
+/* =====================================================
+   PARTICIPANT — no session
+   ===================================================== */
+function renderNoSession(){
+  app.innerHTML='';
+  app.appendChild(el(`<div class="card center">
+    <div class="thanks">🍽️</div>
+    <h2>No taste test right now</h2>
+    <p class="sub">There's no tasting live at the moment. Check back when your host starts one!</p>
+    <div class="btn-row"><button class="btn-ghost" id="refresh">↻ Check again</button></div>
+  </div>`));
+  document.getElementById('refresh').onclick=boot;
+}
+
+/* =====================================================
+   PARTICIPANT — tasting
+   ===================================================== */
+function renderWelcome(){
+  taster={ name:'', matches:{}, ranking:[] };
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="card">
+      <h1>${esc(CONFIG.eventName||'Taste Test')}</h1>
+      <p class="sub">Taste, then tell us what you think. Takes about a minute.</p>
+      <label class="fld" for="nm">First, what's your name?</label>
+      <input type="text" id="nm" autocomplete="off" placeholder="Type your name" />
+      <div class="btn-row"><button class="btn-primary" id="start">Start tasting →</button></div>
+      <div id="werr"></div>
+    </div>`));
+  const nm=document.getElementById('nm'); nm.focus();
+  document.getElementById('start').onclick=()=>{ const name=nm.value.trim(); if(!name){ showErr('werr','Please type your name to begin.'); return; } taster.name=name; renderTake(); };
+  nm.addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('start').click(); });
+}
+
+function renderTake(){
+  const tray=CONFIG.items.map(b=>`<div class="chip" data-brand="${esc(b)}">${esc(b)}</div>`).join('');
+  const rail=letters().map((_,i)=>`<div class="rail-cell">${i+1}</div>`).join('');
+  const cards=letters().map(L=>`<li class="rank-item" data-letter="${L}"><span class="grip">⣿</span><div class="badgeL">${L}</div><div class="bslot" data-letter="${L}"><span class="placeholder">drop brand</span></div></li>`).join('');
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="card">
+      <h2>Rank &amp; match the samples</h2>
+      <p class="step-hint">① Drag a brand from the tray onto the sample you think it is. ② Drag the cards (using the ⣿ handle) so your favorite is at the top.</p>
+      <div class="pool-label">Brands — drag onto a sample</div>
+      <div class="pool" id="tray">${tray}</div>
+      <div class="divider"></div>
+      <div class="railhead">⬆ FAVORITE</div>
+      <div class="rankwrap"><div class="rail">${rail}</div><ul class="rank-list" id="list">${cards}</ul></div>
+      <div class="railfoot">⬇ LEAST FAVORITE</div>
+      <div class="btn-row"><button class="btn-ghost" id="back">← Back</button><button class="btn-primary" id="next" disabled>Review →</button></div>
+    </div>`));
+  const list=document.getElementById('list'), trayEl=document.getElementById('tray'), nextBtn=document.getElementById('next');
+  const slots=[...document.querySelectorAll('.bslot')];
+  const chipsIn=s=>[...s.children].filter(c=>c.classList.contains('chip'));
+  function refreshSlot(s){ const ph=s.querySelector('.placeholder'); if(chipsIn(s).length){ if(ph) ph.remove(); } else if(!ph){ s.appendChild(el('<span class="placeholder">drop brand</span>')); } }
+  function state(){ slots.forEach(refreshSlot); nextBtn.disabled=!slots.every(s=>chipsIn(s).length===1); }
+  new Sortable(list,{ animation:150, handle:'.grip', ghostClass:'sortable-ghost' });
+  new Sortable(trayEl,{ group:'brand', animation:150, ghostClass:'sortable-ghost', filter:'.placeholder' });
+  slots.forEach(slot=>new Sortable(slot,{ group:'brand', animation:150, ghostClass:'sortable-ghost', filter:'.placeholder',
+    onAdd:function(evt){ chipsIn(slot).forEach(k=>{ if(k!==evt.item) trayEl.appendChild(k); }); state(); }, onRemove:state }));
+  state();
+  document.getElementById('back').onclick=renderWelcome;
+  nextBtn.onclick=()=>{ const matches={},ranking=[]; [...list.children].forEach(li=>{ const L=li.dataset.letter; ranking.push(L); const chip=li.querySelector('.chip'); if(chip) matches[chip.dataset.brand]=L; }); taster.matches=matches; taster.ranking=ranking; renderReview(); };
+}
+
+function renderReview(){
+  const l2b={}; Object.keys(taster.matches).forEach(b=>l2b[taster.matches[b]]=b);
+  const matchRows=letters().map(L=>`<tr><td class="n"><span class="pill">${L}</span></td><td>${esc(l2b[L]||'—')}</td></tr>`).join('');
+  const rankRows=taster.ranking.map((L,i)=>`<tr><td class="n">${i+1}</td><td><span class="pill">${L}</span> ${esc(l2b[L]||'')}</td></tr>`).join('');
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="card">
+      <h2>Check &amp; submit</h2>
+      <p class="step-hint"><b>${esc(taster.name)}</b>, here's what you chose.</p>
+      <div class="pool-label">Your guesses</div>
+      <table><thead><tr><th class="n">Sample</th><th>You said it's</th></tr></thead><tbody>${matchRows}</tbody></table>
+      <div class="pool-label" style="margin-top:16px">Your ranking</div>
+      <table><thead><tr><th class="n">#</th><th>Sample</th></tr></thead><tbody>${rankRows}</tbody></table>
+      <div class="btn-row"><button class="btn-ghost" id="back">← Change</button><button class="btn-primary" id="submit">Submit ✓</button></div>
+      <div id="serr"></div>
+    </div>`));
+  document.getElementById('back').onclick=renderTake;
+  document.getElementById('submit').onclick=submitTaster;
+}
+
+async function submitTaster(){
+  const btn=document.getElementById('submit'); btn.disabled=true; btn.textContent='Submitting…';
+  try{
+    const res=await apiPost({ action:'submit', name:taster.name, device:DEVICE, matches:taster.matches, ranking:taster.ranking });
+    if(!res.ok){ if(res.error==='closed'){ boot(); return; } showErr('serr','Something went wrong. Please try again.'); btn.disabled=false; btn.textContent='Submit ✓'; return; }
+    renderThanks();
+  }catch(e){ showErr('serr','Could not submit — check your connection and try again.'); btn.disabled=false; btn.textContent='Submit ✓'; }
+}
+
+function renderThanks(){
+  app.innerHTML='';
+  app.appendChild(el(`<div class="card center"><div class="thanks">🎉</div><h2>Thanks, ${esc(taster.name)}!</h2><p class="sub">Your answers are in. Results appear when the host ends the taste test.</p><div class="btn-row"><button class="btn-primary" id="again">Next taster →</button></div></div>`));
+  document.getElementById('again').onclick=renderWelcome;
+}
+
+function renderClosedForParticipant(){
+  app.innerHTML='';
+  app.appendChild(el(`<div class="card center"><h2>${esc(CONFIG.eventName||'Taste Test')}</h2><p class="sub">This taste test is complete. Here are the results!</p></div>`));
+  loadAndShowResults('');
+}
+
+/* =====================================================
+   HOST
+   ===================================================== */
+function renderHost(){
+  if(pollTimer) clearInterval(pollTimer);
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="card">
+      <h1>Host controls</h1>
+      <label class="fld" for="pc">Enter host password</label>
+      <input type="password" id="pc" placeholder="Password" />
+      <div class="btn-row"><button class="btn-primary" id="unlock">Unlock</button></div>
+      <div id="herr"></div>
+    </div>`));
+  document.getElementById('unlock').onclick=async ()=>{
+    const key=document.getElementById('pc').value.trim();
+    const res=await apiGet('status',{key});
+    if(!res.ok||!res.isHost){ showErr('herr','Incorrect password.'); return; }
+    HOST_KEY=key; routeHost(res.status);
+  };
+  document.getElementById('pc').addEventListener('keydown',e=>{ if(e.key==='Enter') document.getElementById('unlock').click(); });
+}
+
+async function routeHost(status){
+  if(pollTimer) clearInterval(pollTimer);
+  if(status==='open') return renderHostOpen();
+  if(status==='closed') return renderHostClosed();
+  return renderCreate();
+}
+
+function changePwLink(){ return `<div class="foot" style="margin-top:6px"><a id="chpw">Change host password</a></div>`; }
+function wireChangePw(){
+  const a=document.getElementById('chpw'); if(!a) return;
+  a.onclick=()=>{
+    app.innerHTML='';
+    app.appendChild(el(`<div class="card">
+      <h2>Change host password</h2>
+      <label class="fld" for="np">New password (min 3 characters)</label>
+      <input type="password" id="np" />
+      <div class="btn-row"><button class="btn-ghost" id="cancel">Cancel</button><button class="btn-primary" id="save">Save</button></div>
+      <div id="pwerr"></div></div>`));
+    document.getElementById('cancel').onclick=()=>routeHost_currentStatus();
+    document.getElementById('save').onclick=async ()=>{
+      const np=document.getElementById('np').value.trim();
+      if(np.length<3){ showErr('pwerr','Too short.'); return; }
+      const res=await apiPost({action:'setPassword', key:HOST_KEY, newPw:np});
+      if(!res.ok){ showErr('pwerr','Could not update.'); return; }
+      HOST_KEY=np; routeHost_currentStatus();
+    };
+  };
+}
+async function routeHost_currentStatus(){ const s=await apiGet('status',{key:HOST_KEY}); routeHost(s.status); }
+
+/* ---- Create session (idle) ---- */
+function renderCreate(){
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="card">
+      <h1>Create a taste test</h1>
+      <p class="sub">Set it up here — nothing to edit in any spreadsheet.</p>
+      <label class="fld" for="ev">Event name</label>
+      <input type="text" id="ev" placeholder="e.g. Pancake Taste Test" />
+      <label class="fld" for="ex">Expected participants (optional)</label>
+      <input type="number" id="ex" min="0" inputmode="numeric" placeholder="e.g. 6" />
+      <label class="fld">Items &amp; their sample letters</label>
+      <p class="step-hint">Enter each item and the letter you'll write on its plate. Letters should be A, B, C… with no gaps.</p>
+      <div id="items"></div>
+      <button class="btn-ghost btn-small" id="addItem" style="margin-top:4px">+ Add item</button>
+      <div class="btn-row"><button class="btn-primary" id="create">Start this taste test →</button></div>
+      <div id="cerr"></div>
+    </div>
+    ${changePwLink()}`));
+  const itemsEl=document.getElementById('items');
+  function addRow(name,letter){
+    const row=el(`<div class="item-row">
+      <input type="text" class="i-name" placeholder="Item name" value="${esc(name||'')}" />
+      <input type="text" class="i-letter" maxlength="1" value="${esc(letter||'')}" />
+      <button class="rm" title="remove">✕</button></div>`);
+    row.querySelector('.rm').onclick=()=>{ row.remove(); };
+    itemsEl.appendChild(row);
+  }
+  function nextLetter(){ return String.fromCharCode(65+itemsEl.children.length); }
+  // start with 3 rows A,B,C
+  addRow('','A'); addRow('','B'); addRow('','C');
+  document.getElementById('addItem').onclick=()=>addRow('',nextLetter());
+  document.getElementById('create').onclick=async ()=>{
+    const eventName=document.getElementById('ev').value.trim();
+    const expected=Number(document.getElementById('ex').value||0);
+    const items=[...itemsEl.querySelectorAll('.item-row')].map(r=>({ name:r.querySelector('.i-name').value.trim(), letter:r.querySelector('.i-letter').value.trim().toUpperCase() })).filter(it=>it.name||it.letter);
+    // client-side validate
+    const problems=validateItemsClient(eventName,items);
+    if(problems.length){ showErr('cerr','Please fix:\n• '+problems.join('\n• ')); return; }
+    const btn=document.getElementById('create'); btn.disabled=true; btn.textContent='Creating…';
+    const res=await apiPost({ action:'createSession', key:HOST_KEY, eventName, expected, items });
+    if(!res.ok){ showErr('cerr', res.issues? ('Please fix:\n• '+res.issues.join('\n• ')) : 'Could not create the session.'); btn.disabled=false; btn.textContent='Start this taste test →'; return; }
+    CONFIG=await apiGet('config');
+    renderHostOpen();
+  };
+  wireChangePw();
+}
+
+function validateItemsClient(eventName,items){
+  const p=[]; if(!eventName) p.push('Add an event name.');
+  const real=items.filter(it=>it.name);
+  const n=real.length; if(n<2) p.push('Add at least 2 items.');
+  const exp=[]; for(let i=0;i<n;i++) exp.push(String.fromCharCode(65+i));
+  const last=n?exp[n-1]:'-'; const seen={};
+  real.forEach(it=>{ if(!it.letter){ p.push('"'+it.name+'" needs a letter.'); return; } if(!/^[A-Z]$/.test(it.letter)) p.push('"'+it.name+'" letter must be A–'+last+'.'); if(seen[it.letter]) p.push('Letter '+it.letter+' used twice.'); seen[it.letter]=true; });
+  exp.forEach(L=>{ if(!seen[L]) p.push('Missing letter '+L+' (use A–'+last+', no gaps).'); });
+  Object.keys(seen).forEach(L=>{ if(exp.indexOf(L)===-1) p.push('Letter '+L+' out of range (use A–'+last+').'); });
+  return p;
+}
+
+/* ---- Live dashboard (open) ---- */
+async function renderHostOpen(){
+  if(pollTimer) clearInterval(pollTimer);
+  const st=await apiGet('status',{key:HOST_KEY});
+  const names=st.submittedNames||[];
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="card">
+      <h2>${esc(st.eventName||CONFIG.eventName||'Taste Test')}</h2>
+      <p class="status-line">Status: <b>Open — collecting responses</b></p>
+      <p class="big">${st.submitted} <span class="muted" style="font-size:16px">of ${st.expected||'?'} submitted</span></p>
+      <div class="pool" style="margin-top:6px">${names.map(n=>`<span class="chip" style="cursor:default">${esc(n)}</span>`).join('')||'<span class="muted">No submissions yet.</span>'}</div>
+      <div class="divider"></div>
+      <div class="btn-row"><button class="btn-primary" id="end">End &amp; Reveal results</button></div>
+      <div class="btn-row"><button class="btn-ghost" id="refresh">↻ Refresh</button></div>
+      <div id="herr"></div>
+    </div>
+    ${changePwLink()}`));
+  document.getElementById('refresh').onclick=renderHostOpen;
+  document.getElementById('end').onclick=async ()=>{ if(!confirm('End the taste test and reveal results to everyone?')) return; await apiPost({action:'close',key:HOST_KEY}); renderHostClosed(); };
+  pollTimer=setInterval(async ()=>{ const s=await apiGet('status',{key:HOST_KEY}); if(s.status!=='open'){ clearInterval(pollTimer); return; } const b=document.querySelector('.big'); if(b) b.innerHTML=`${s.submitted} <span class="muted" style="font-size:16px">of ${s.expected||'?'} submitted</span>`; },6000);
+  wireChangePw();
+}
+
+/* ---- Finished (closed) ---- */
+async function renderHostClosed(){
+  if(pollTimer) clearInterval(pollTimer);
+  const st=await apiGet('status',{key:HOST_KEY});
+  app.innerHTML='';
+  app.appendChild(el(`
+    <div class="card">
+      <h2>${esc(st.eventName||CONFIG.eventName||'Taste Test')}</h2>
+      <p class="status-line">Status: <b>CLOSED — results revealed</b></p>
+      <div class="btn-row"><button class="btn-ghost" id="reopen">↻ Re-open for more responses</button></div>
+      <div class="btn-row"><button class="btn-primary" id="newsession">✓ Save &amp; start new session</button></div>
+      <p class="step-hint" style="margin-top:10px">"Save &amp; start new" archives this event (with the date) to the History &amp; Archive tabs, then lets you create the next one. Nothing is ever deleted.</p>
+      <div id="herr"></div>
+    </div>
+    <div id="hostResults"></div>
+    ${changePwLink()}`));
+  document.getElementById('reopen').onclick=async ()=>{ await apiPost({action:'reopen',key:HOST_KEY}); renderHostOpen(); };
+  document.getElementById('newsession').onclick=async ()=>{ if(!confirm('Save this event to History and start a new one?')) return; await apiPost({action:'newsession',key:HOST_KEY}); CONFIG=await apiGet('config'); renderCreate(); };
+  loadAndShowResults(HOST_KEY,'hostResults');
+  wireChangePw();
+}
+
+/* =====================================================
+   RESULTS (shared)
+   ===================================================== */
+async function loadAndShowResults(key, targetId){
+  const target=targetId?document.getElementById(targetId):app;
+  const res=await apiGet('results', key?{key}:undefined);
+  if(!res.ok){ target.appendChild(el(`<div class="card"><p class="muted">Results are not available yet.</p></div>`)); return; }
+  const correct={}; res.answerKey.forEach(a=>correct[a.item]=a.sample);
+  const label=(item,sample)=>`${esc(item)} <span class="muted">(Sample ${sample})</span>`;
+  const N=res.answerKey.length;
+  const gr=res.groupRanking.map((r,i)=>{ const m=['🥇','🥈','🥉'][i]||`${i+1}.`; return `<tr><td class="n">${m}</td><td>${label(r.item,r.sample)}</td><td class="n">${r.avgRank??'–'}</td></tr>`; }).join('');
+  const subs=(res.submissions||[]).slice().sort((a,b)=>b.score-a.score||a.name.localeCompare(b.name));
+  const medal=i=>['🥇','🥈','🥉'][i]||'';
+  let lbRows='';
+  subs.forEach((p,i)=>{
+    lbRows+=`<tr class="clickable" data-i="${i}"><td><span class="medal">${medal(i)}</span> ${esc(p.name)} <span class="muted" style="font-size:13px">▸</span></td><td class="n big">${p.score}<span class="muted" style="font-size:13px">/${N}</span></td></tr>`;
+    lbRows+=`<tr id="det-${i}" style="display:none"><td colspan="2"><div class="detail">${personDetail(p,correct)}</div></td></tr>`;
+  });
+  if(!subs.length) lbRows='<tr><td class="muted">No entries</td></tr>';
+  const pi=res.perItem.slice().sort((a,b)=>a.sample<b.sample?-1:1).map(p=>`<tr><td>${label(p.item,p.sample)}</td><td class="n">${p.avgRank??'–'}</td><td class="n">${p.matchPct}%</td></tr>`).join('');
+
+  target.appendChild(el(`<div>
+    <div class="card">
+      <h2>⭐ Group favorites</h2>
+      <p class="step-hint">Everyone's rankings combined — #1 is the crowd favorite (lower average rank = more liked).</p>
+      <table><thead><tr><th class="n">Rank</th><th>Item</th><th class="n">Avg rank</th></tr></thead><tbody>${gr}</tbody></table>
+    </div>
+    <div class="card">
+      <h2>🏆 Matching leaderboard</h2>
+      <p class="step-hint">Who identified the most samples correctly (out of ${N}). Tap a name to see their answers.</p>
+      <table><thead><tr><th>Name</th><th class="n">Correct</th></tr></thead><tbody id="lbBody">${lbRows}</tbody></table>
+    </div>
+    <div class="card">
+      <h2>📊 Per-item detail</h2>
+      <table><thead><tr><th>Item</th><th class="n">Avg rank</th><th class="n">Guessed right</th></tr></thead><tbody>${pi}</tbody></table>
+      <p class="step-hint" style="margin-top:10px">${res.totalParticipants} participant(s) total.</p>
+    </div>
+  </div>`));
+  const body=document.getElementById('lbBody');
+  if(body) body.querySelectorAll('tr.clickable').forEach(tr=>{ tr.onclick=()=>{ const d=document.getElementById('det-'+tr.dataset.i); if(d) d.style.display=d.style.display==='none'?'':'none'; }; });
+}
+
+function personDetail(p, correct){
+  const guessed=p.matches||{};
+  const l2b={}; Object.keys(correct).forEach(b=>l2b[correct[b]]=b);
+  let rows='';
+  Object.keys(correct).forEach(brand=>{ const g=guessed[brand]||'—', c=correct[brand]; const ok=String(g).toUpperCase()===String(c).toUpperCase();
+    rows+=`<tr><td>${esc(brand)}</td><td class="n"><span class="pill">${esc(g)}</span></td><td class="n"><span class="pill">${esc(c)}</span></td><td class="n">${ok?'<span class="ok">✓</span>':'<span class="no">✗</span>'}</td></tr>`; });
+  const rank=(p.ranking||[]).map((L,i)=>`${i+1}. ${L} <span class="muted">(${esc(l2b[L]||'?')})</span>`).join(' &nbsp;·&nbsp; ');
+  return `<div class="tag" style="margin-bottom:6px">Matching</div>
+    <table><thead><tr><th>Brand</th><th class="n">Guessed</th><th class="n">Actual</th><th class="n"> </th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="tag" style="margin:10px 0 4px">Their ranking (favorite → least)</div>
+    <div style="font-size:15px">${rank||'—'}</div>`;
+}
+
+/* ---------------- misc ---------------- */
+document.getElementById('hostLink').onclick=(e)=>{ e.preventDefault(); hostMode=true; if(CONFIG) renderHost(); else boot(); };
+boot();
+</script>
+</body>
+</html>

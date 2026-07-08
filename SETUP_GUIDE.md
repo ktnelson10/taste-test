@@ -4,7 +4,8 @@ An online taste test where people (kids to grandparents) drag-and-drop to guess 
 sample is which and rank their favorites. The **host runs everything from the website** —
 you never edit a spreadsheet by hand, and every finished event is saved automatically.
 
-Free stack: a Google Sheet (storage) + Google Apps Script (backend) + Cloudflare Pages (the page).
+Free stack: a Google Sheet (storage) + Google Apps Script (backend) + Cloudflare Pages (the page),
+with the page's source living in a GitHub repo so changes deploy automatically.
 
 ## Key ideas
 - **Deploy once.** You only ever redeploy if the `Code.gs` code changes.
@@ -26,10 +27,14 @@ Free stack: a Google Sheet (storage) + Google Apps Script (backend) + Cloudflare
 1. Apps Script ▸ **Deploy ▸ New deployment ▸** gear ⚙️ ▸ **Web app**.
 2. **Execute as: Me**, **Who has access: Anyone**. **Deploy**, authorize, **copy the `/exec` URL**.
 
-### 3. Connect + host the page
-1. The URL is already in `index.html` (`API_URL`). If you get a new one, replace it there.
-2. <https://pages.cloudflare.com> ▸ **Create a project ▸ Direct Upload** ▸ name it ▸ **drag `index.html`** ▸ **Deploy**.
-3. Share that `*.pages.dev` link (or a QR code) with tasters.
+### 3. Connect + host the page (GitHub → Cloudflare auto-deploy)
+1. Make sure your `/exec` URL is pasted into `index.html` (`API_URL`).
+2. Put the project in a GitHub repo (this one is `github.com/ktnelson10/taste-test`).
+3. <https://dash.cloudflare.com> ▸ **Workers & Pages ▸ Create ▸ Pages ▸ Connect to Git** ▸ pick the repo.
+   Build settings: **Framework preset: None**, **Build command: (blank)**, **Build output directory: `/`**. **Save and Deploy.**
+4. Share the resulting `*.pages.dev` link (or a QR code) with tasters.
+
+From now on, **every `git push` to `main` auto-deploys** the page — no manual uploads.
 
 ### 4. Set your host password
 - Open the link ▸ **Host controls** ▸ enter **1234** ▸ then use **Change host password** to set your own. (Or use **Taste Test ▸ Set / reset Host Password** in the Sheet.)
@@ -47,10 +52,17 @@ Tip: if you ever mistype an item/letter, you can fix it and results re-score aut
 
 ---
 
-## Updating the code later (only if I give you a new `Code.gs`)
-1. Apps Script ▸ select all ▸ delete ▸ paste new `Code.gs` ▸ **Save**.
-2. **Deploy ▸ Manage deployments ▸ ✎ Edit ▸ Version: New version ▸ Deploy** (same URL, no `index.html` change).
-3. Reload the Sheet. This is the only time you "redeploy" — never for running events.
+## Making changes later
+- **The page (`index.html`, and the docs):** commit and push — Cloudflare auto-deploys.
+  ```bash
+  cd ~/code/taste-test
+  git add -A && git commit -m "what changed" && git push
+  ```
+- **The backend (`Code.gs`):** paste the new code into Apps Script ▸ **Save**, then
+  **Deploy ▸ Manage deployments ▸ ✎ Edit ▸ Version: New version ▸ Deploy** (keeps the same `/exec` URL).
+  Do NOT choose "New deployment" — that creates a different URL and breaks the app. Reload the Sheet
+  afterward. This redeploy is the only "deploy" step, and it's needed **only** when `Code.gs` changes —
+  never for running events.
 
 ---
 

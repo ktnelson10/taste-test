@@ -75,17 +75,25 @@ function setHostPasswordMenu_() {
 
 function doGet(e) {
   const action = (e.parameter && e.parameter.action) || 'config';
-  const setup = getSetup_();
 
+  // config is the boot call for every visitor — cache it so bursts are cheap
   if (action === 'config') {
+    const cache = CacheService.getScriptCache();
+    const hit = cache.get('cfg');
+    if (hit) return ContentService.createTextOutput(hit).setMimeType(ContentService.MimeType.JSON);
+    const setup = getSetup_();
     const idle = setup.status === 'idle';
-    return json_({
+    const s = JSON.stringify({
       ok: true, eventName: setup.eventName, status: setup.status,
       sampleCount: idle ? 0 : setup.items.length,
       items: idle ? [] : setup.items.map(function (i) { return i.name; }),
       expected: setup.expected, submitted: countSubs_()
     });
+    cache.put('cfg', s, 8); // seconds
+    return ContentService.createTextOutput(s).setMimeType(ContentService.MimeType.JSON);
   }
+
+  const setup = getSetup_();
   if (action === 'status') {
     const key = (e.parameter.key || '');
     const isHost = key === getAdminPw_();
@@ -118,13 +126,14 @@ function doPost(e) {
     return json_({ ok: false, error: 'bad passcode' });
   }
 
-  if (action === 'close')  { setStatus_('closed'); return json_({ ok: true, status: 'closed' }); }
-  if (action === 'reopen') { setStatus_('open');   return json_({ ok: true, status: 'open' }); }
+  if (action === 'close')  { setStatus_('closed'); clearConfigCache_(); return json_({ ok: true, status: 'closed' }); }
+  if (action === 'reopen') { setStatus_('open');   clearConfigCache_(); return json_({ ok: true, status: 'open' }); }
 
   if (action === 'newsession') {           // "Save & start new" — archive then free the board
     archiveCurrent_();
     clearSubs_();
     setStatus_('idle');
+    clearConfigCache_();
     return json_({ ok: true, status: 'idle' });
   }
 
@@ -168,6 +177,7 @@ function createSession_(body) {
 
   PropertiesService.getScriptProperties().setProperty('currentSessionId', String(Date.now()));
   clearSubs_();
+  clearConfigCache_();
   return { ok: true };
 }
 
@@ -238,17 +248,16 @@ function getSetup_() {
   const ss = SpreadsheetApp.getActiveSpreadsheet();
   const sh = ss.getSheetByName(SETUP_SHEET);
   if (!sh) return { eventName: '', status: 'idle', expected: 0, items: [] };
-  const eventName = String(sh.getRange('B1').getValue() || '');
-  const status = String(sh.getRange('B2').getValue() || 'idle').toLowerCase().trim();
-  const expected = Number(sh.getRange('B4').getValue() || 0);
+  // Read the whole config block (A1:B<last>) in ONE round-trip instead of several.
+  const last = Math.max(sh.getLastRow(), 6);
+  const vals = sh.getRange(1, 1, last, 2).getValues();
+  const eventName = String(vals[0][1] || '');            // B1
+  const status = String(vals[1][1] || 'idle').toLowerCase().trim(); // B2
+  const expected = Number(vals[3][1] || 0);              // B4
   const items = [];
-  const last = sh.getLastRow();
-  if (last >= 7) {
-    const vals = sh.getRange(7, 1, last - 6, 2).getValues();
-    for (let i = 0; i < vals.length; i++) {
-      if (vals[i][0] === '' || vals[i][0] === null) continue;
-      items.push({ name: String(vals[i][0]).trim(), correct: norm_(vals[i][1]) });
-    }
+  for (let i = 6; i < vals.length; i++) {                // row 7 onward
+    if (vals[i][0] === '' || vals[i][0] === null) continue;
+    items.push({ name: String(vals[i][0]).trim(), correct: norm_(vals[i][1]) });
   }
   return { eventName: eventName, status: status, expected: expected, items: items };
 }
@@ -374,3 +383,4 @@ function setStatus_(status) {
   if (sh) sh.getRange('B2').setValue(status);
 }
 function json_(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+function clearConfigCache_() { try { CacheService.getScriptCache().remove('cfg'); } catch (e) {} }

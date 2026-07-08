@@ -126,7 +126,7 @@ async function goTaster(){
 /* ---------------- Boot ---------------- */
 async function boot(){
   if(!API_URL || API_URL.indexOf('PASTE_')===0){ app.innerHTML='<div class="card"><h2>Not connected</h2><p class="sub">Set API_URL in index.html.</p></div>'; return; }
-  app.innerHTML='<div class="card center"><h2>Loading…</h2></div>';
+  app.innerHTML='<div class="card center"><div class="thanks">🍽️</div><h2>Taste Test</h2><p class="sub">Getting things ready…</p></div>';
   try{ CONFIG=await apiGet('config'); }
   catch(e){ app.innerHTML='<div class="card"><h2>Connection problem</h2><p class="sub">Could not reach the server. Check your internet and try again.</p></div>'; return; }
   if(hostMode){ renderHost(); return; }
@@ -175,68 +175,70 @@ function renderWelcome(){
 }
 
 function renderTake(){
-  const tray=CONFIG.items.map(b=>`<div class="chip" data-brand="${esc(b)}">${esc(b)}</div>`).join('');
-  const rail=letters().map((_,i)=>`<div class="rail-cell">${i+1}</div>`).join('');
-  const cards=letters().map(L=>`<li class="rank-item" data-letter="${L}"><span class="grip">⣿</span><div class="badgeL">${L}</div><div class="bslot" data-letter="${L}"><span class="placeholder">drop brand</span></div></li>`).join('');
+  // Pre-fill from any prior selections (used by "Update my selections")
+  const l2b={}; Object.keys(taster.matches||{}).forEach(b=>{ l2b[taster.matches[b]]=b; });
+  const updating=Object.keys(taster.matches||{}).length>0;
+  const order=(taster.ranking&&taster.ranking.length===CONFIG.sampleCount)?taster.ranking.slice():letters();
+  const trayBrands=CONFIG.items.filter(b=>!(taster.matches&&taster.matches[b]));
+  const tray=trayBrands.map(b=>`<div class="chip" data-brand="${esc(b)}">${esc(b)}</div>`).join('');
+  const rail=order.map((_,i)=>`<div class="rail-cell">${i+1}</div>`).join('');
+  const cards=order.map(L=>{
+    const brand=l2b[L];
+    const inner=brand?`<div class="chip" data-brand="${esc(brand)}">${esc(brand)}</div>`:`<span class="placeholder">drop brand</span>`;
+    return `<li class="rank-item" data-letter="${L}"><span class="grip">⣿</span><div class="badgeL">${L}</div><div class="bslot" data-letter="${L}">${inner}</div></li>`;
+  }).join('');
   app.innerHTML='';
   app.appendChild(el(`
     <div class="card">
       <h2>Rank &amp; match the samples</h2>
-      <p class="step-hint">① Drag a brand from the tray onto the sample you think it is. ② Drag the cards (using the ⣿ handle) so your favorite is at the top.</p>
+      <p class="step-hint">① Drag a brand from the tray onto the sample you think it is. ② Drag the cards (using the ⣿ handle) so your favorite is at the top. Then submit.</p>
       <div class="pool-label">Brands — drag onto a sample</div>
       <div class="pool" id="tray">${tray}</div>
       <div class="divider"></div>
       <div class="railhead">⬆ FAVORITE</div>
       <div class="rankwrap"><div class="rail">${rail}</div><ul class="rank-list" id="list">${cards}</ul></div>
       <div class="railfoot">⬇ LEAST FAVORITE</div>
-      <div class="btn-row"><button class="btn-ghost" id="back">← Back</button><button class="btn-primary" id="next" disabled>Review →</button></div>
+      <div class="btn-row"><button class="btn-ghost" id="back">← Back</button><button class="btn-primary" id="submit" disabled>${updating?'Update my answers ✓':'Submit ✓'}</button></div>
+      <div id="terr"></div>
     </div>`));
-  const list=document.getElementById('list'), trayEl=document.getElementById('tray'), nextBtn=document.getElementById('next');
+  const list=document.getElementById('list'), trayEl=document.getElementById('tray'), submitBtn=document.getElementById('submit');
   const slots=[...document.querySelectorAll('.bslot')];
   const chipsIn=s=>[...s.children].filter(c=>c.classList.contains('chip'));
   function refreshSlot(s){ const ph=s.querySelector('.placeholder'); if(chipsIn(s).length){ if(ph) ph.remove(); } else if(!ph){ s.appendChild(el('<span class="placeholder">drop brand</span>')); } }
-  function state(){ slots.forEach(refreshSlot); nextBtn.disabled=!slots.every(s=>chipsIn(s).length===1); }
+  function state(){ slots.forEach(refreshSlot); submitBtn.disabled=!slots.every(s=>chipsIn(s).length===1); }
   new Sortable(list,{ animation:150, handle:'.grip', ghostClass:'sortable-ghost' });
   new Sortable(trayEl,{ group:'brand', animation:150, ghostClass:'sortable-ghost', filter:'.placeholder' });
   slots.forEach(slot=>new Sortable(slot,{ group:'brand', animation:150, ghostClass:'sortable-ghost', filter:'.placeholder',
     onAdd:function(evt){ chipsIn(slot).forEach(k=>{ if(k!==evt.item) trayEl.appendChild(k); }); state(); }, onRemove:state }));
   state();
   document.getElementById('back').onclick=renderWelcome;
-  nextBtn.onclick=()=>{ const matches={},ranking=[]; [...list.children].forEach(li=>{ const L=li.dataset.letter; ranking.push(L); const chip=li.querySelector('.chip'); if(chip) matches[chip.dataset.brand]=L; }); taster.matches=matches; taster.ranking=ranking; renderReview(); };
-}
-
-function renderReview(){
-  const l2b={}; Object.keys(taster.matches).forEach(b=>l2b[taster.matches[b]]=b);
-  const matchRows=letters().map(L=>`<tr><td class="n"><span class="pill">${L}</span></td><td>${esc(l2b[L]||'—')}</td></tr>`).join('');
-  const rankRows=taster.ranking.map((L,i)=>`<tr><td class="n">${i+1}</td><td><span class="pill">${L}</span> ${esc(l2b[L]||'')}</td></tr>`).join('');
-  app.innerHTML='';
-  app.appendChild(el(`
-    <div class="card">
-      <h2>Check &amp; submit</h2>
-      <p class="step-hint"><b>${esc(taster.name)}</b>, here's what you chose.</p>
-      <div class="pool-label">Your guesses</div>
-      <table><thead><tr><th class="n">Sample</th><th>You said it's</th></tr></thead><tbody>${matchRows}</tbody></table>
-      <div class="pool-label" style="margin-top:16px">Your ranking</div>
-      <table><thead><tr><th class="n">#</th><th>Sample</th></tr></thead><tbody>${rankRows}</tbody></table>
-      <div class="btn-row"><button class="btn-ghost" id="back">← Change</button><button class="btn-primary" id="submit">Submit ✓</button></div>
-      <div id="serr"></div>
-    </div>`));
-  document.getElementById('back').onclick=renderTake;
-  document.getElementById('submit').onclick=submitTaster;
+  submitBtn.onclick=()=>{
+    const matches={},ranking=[];
+    [...list.children].forEach(li=>{ const L=li.dataset.letter; ranking.push(L); const chip=li.querySelector('.chip'); if(chip) matches[chip.dataset.brand]=L; });
+    taster.matches=matches; taster.ranking=ranking; submitTaster();
+  };
 }
 
 async function submitTaster(){
-  const btn=document.getElementById('submit'); btn.disabled=true; btn.textContent='Submitting…';
+  const btn=document.getElementById('submit'); const label=btn?btn.textContent:'Submit ✓';
+  if(btn){ btn.disabled=true; btn.textContent='Submitting…'; }
   try{
     const res=await apiPost({ action:'submit', name:taster.name, device:DEVICE, matches:taster.matches, ranking:taster.ranking });
-    if(!res.ok){ if(res.error==='closed'){ boot(); return; } showErr('serr','Something went wrong. Please try again.'); btn.disabled=false; btn.textContent='Submit ✓'; return; }
+    if(!res.ok){ if(res.error==='closed'){ boot(); return; } showErr('terr','Something went wrong. Please try again.'); if(btn){ btn.disabled=false; btn.textContent=label; } return; }
     renderThanks();
-  }catch(e){ showErr('serr','Could not submit — check your connection and try again.'); btn.disabled=false; btn.textContent='Submit ✓'; }
+  }catch(e){ showErr('terr','Could not submit — check your connection and try again.'); if(btn){ btn.disabled=false; btn.textContent=label; } }
 }
 
 function renderThanks(){
   app.innerHTML='';
-  app.appendChild(el(`<div class="card center"><div class="thanks">🎉</div><h2>Thanks, ${esc(taster.name)}!</h2><p class="sub">Your answers are in. Results appear when the host ends the taste test.</p><div class="btn-row"><button class="btn-primary" id="again">Next taster →</button></div></div>`));
+  app.appendChild(el(`<div class="card center">
+    <div class="thanks">🎉</div>
+    <h2>Thanks, ${esc(taster.name)}!</h2>
+    <p class="sub">Your answers are in. Results appear when the host ends the taste test. Made a mistake? You can update them below.</p>
+    <div class="btn-row"><button class="btn-ghost" id="edit">✏️ Update my selections</button></div>
+    <div class="btn-row"><button class="btn-primary" id="again">Next taster →</button></div>
+  </div>`));
+  document.getElementById('edit').onclick=()=>renderTake();   // taster.* still holds their answers -> pre-filled
   document.getElementById('again').onclick=renderWelcome;
 }
 

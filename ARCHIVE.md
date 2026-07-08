@@ -68,6 +68,19 @@ kids-to-grandparents, auto-compiles results, and removes the manual sheet prep.
 - Added `CLAUDE.md` (architecture/handoff), this `ARCHIVE.md`, a human-friendly `README.md`, and the
   existing `SETUP_GUIDE.md`.
 
+### Phase 8 — performance + flow polish
+- Site felt slow to load. Diagnosed it as Apps Script latency (cold start + the script.google.com →
+  googleusercontent.com redirect + several per-cell Sheet reads), not Cloudflare. Fixes:
+  - `getSetup_` now reads the whole config block in **one** `getValues()` call.
+  - The public `config` boot call is **cached in `CacheService` for 8s**, invalidated immediately on
+    any session state change (`createSession`/`close`/`reopen`/`newsession`).
+  - Friendlier branded loading card.
+  - (Not fixed in code: Apps Script cold start. Durable fix = move backend to a Cloudflare Worker +
+    KV/D1 if load speed remains a problem.)
+- Flow change: removed the "Review your options" page. The tasting screen now **submits directly**.
+  The thanks screen adds **"Update my selections"**, which reopens the tasting screen **pre-filled**
+  with the taster's prior answers; re-submitting **overwrites** their entry (backend replaces by name).
+
 ### Key decisions
 - Letters over numbers for samples. Layout B for tasting. One live session + full archive history.
 - Host assigns letters; single admin password. No delete path; archive-before-clear always.

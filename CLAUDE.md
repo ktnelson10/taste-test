@@ -60,13 +60,25 @@ POST JSON `{action, …}`: `submit` (public), and host-only (require `key===ADMI
 ## Frontend structure (`index.html`)
 - Boot fetches `config`, routes by status. `view` = `'participant' | 'host'`; a persistent footer
   toggle (`goHost`/`goTaster`) switches without refresh; `HOST_KEY` is remembered after unlock.
-- Participant: `renderNoSession` / `renderWelcome → renderTake → renderReview → submit → renderThanks`.
+- Participant: `renderNoSession` / `renderWelcome → renderTake (submits directly) → renderThanks`.
+  There is no separate review page. `renderThanks` offers "Update my selections", which reopens
+  `renderTake` **pre-filled** from `taster.matches`/`taster.ranking`; re-submitting overrides the
+  prior entry (backend replaces by name).
 - Host: `renderHost` (password) → `routeHost(status)` → `renderCreate` | `renderHostOpen` | `renderHostClosed`.
 - Results (`loadAndShowResults`): Group favorites (top), Matching leaderboard (tap a name for
   per-person drill-down via `personDetail`), Per-item detail. Answer key is folded into labels
   like "Bisquick (Sample C)".
 - Layout note: the tasting screen is "Layout B" — drag brand chips onto lettered sample cards, and
   drag cards to rank; a fixed left rail shows position numbers (1..N) that don't move.
+
+## Performance notes
+- Loading is dominated by Apps Script latency (cold start + a script.google.com→googleusercontent.com
+  redirect + Sheet reads), NOT Cloudflare. The static page is instant.
+- `getSetup_` reads the config block in one `getValues()` call. The public `config` response is cached
+  in `CacheService` for 8s and cleared on any state change (`createSession`/`close`/`reopen`/`newsession`)
+  via `clearConfigCache_()`. Don't cache `status`/`results` (host-live data).
+- Cold start is unavoidable on the free tier. If speed is still a problem, the durable fix is moving the
+  backend to a Cloudflare Worker with KV/D1 (no cold start, no redirect). Not yet done.
 
 ## Deploy model (important)
 - **Frontend**: commit to `main` → Cloudflare auto-deploys. No manual upload.
